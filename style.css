@@ -1,30 +1,81 @@
-body {
-  font-family: sans-serif;
-  background: #e0f7fa;
-  display: flex;
-  justify-content: center;
-  margin-top: 100px;
+// Replace this with your actual OpenWeather API key:
+const apiKey = "8e7a86c99463f59c174e49d1b33cfabd";
+
+let isCelsius = true;
+let currentCity = "";
+
+// Get weather by city name
+async function getWeather() {
+  const city = document.getElementById("cityInput").value;
+  if (!city) {
+    alert("Please enter a city name.");
+    return;
+  }
+  currentCity = city;
+  await fetchWeatherData(city);
 }
 
-.container {
-  background: white;
-  padding: 30px;
-  border-radius: 10px;
-  text-align: center;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+// Fetch weather data using city name
+async function fetchWeatherData(city) {
+  const unit = isCelsius ? "metric" : "imperial";
+  const unitSymbol = isCelsius ? "°C" : "°F";
+
+  const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=${unit}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("City not found");
+
+    const data = await response.json();
+    const temperature = data.main.temp;
+    const description = data.weather[0].description;
+    const icon = data.weather[0].icon;
+
+    document.getElementById("weatherResult").innerHTML = `
+      <h2>${data.name}</h2>
+      <img src="https://openweathermap.org/img/wn/${icon}@2x.png" alt="${description}" />
+      <p><strong>${temperature.toFixed(1)}${unitSymbol}</strong></p>
+      <p>${description}</p>
+    `;
+  } catch (error) {
+    document.getElementById("weatherResult").innerText = "Error fetching weather. Please try again.";
+    console.error("Error:", error);
+  }
 }
 
-input {
-  padding: 10px;
-  width: 200px;
-  margin-right: 10px;
+// Toggle between Celsius and Fahrenheit
+function toggleTemperature() {
+  isCelsius = !isCelsius;
+  if (currentCity) {
+    fetchWeatherData(currentCity);
+  }
 }
 
-button {
-  padding: 10px;
-  cursor: pointer;
+// Get weather using browser location
+function getWeather() {
+  const city = document.getElementById("cityInput").value;
+  document.getElementById("weatherResult").innerText = "Fetching weather for " + city + "...";
+  // You can add real fetch code here
 }
 
-#weatherResult {
-  margin-top: 20px;
+function getWeatherByLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        document.getElementById("weatherResult").innerText =
+          `Fetching weather for your location (Lat: ${lat}, Lon: ${lon})...`;
+        // You can add real fetch code here
+      },
+      (error) => {
+        document.getElementById("weatherResult").innerText =
+          "Error getting location: " + error.message;
+      }
+    );
+  } else {
+    document.getElementById("weatherResult").innerText =
+      "Geolocation is not supported by this browser.";
+  }
 }
+
