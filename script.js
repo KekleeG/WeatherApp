@@ -38,7 +38,6 @@ async function fetchWeatherData(city) {
       <p>${description}</p>
     `;
 
-    // Update toggle button text
     const toggleBtn = document.getElementById("toggleUnit");
     toggleBtn.textContent = isCelsius ? "Show °F" : "Show °C";
     toggleBtn.style.display = "inline-block";
@@ -57,16 +56,16 @@ function toggleTemperature() {
   }
 }
 
-// Get weather using browser location (placeholder)
+// Get weather using browser location
 function getWeatherByLocation() {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
-        document.getElementById("weatherResult").innerText =
-          `Fetching weather for your location (Lat: ${lat}, Lon: ${lon})...`;
-        // Optional: you can call a function to fetch by lat/lon here
+
+        document.getElementById("weatherResult").innerText = "Fetching weather for your location...";
+        fetchWeatherDataByCoords(lat, lon);
       },
       (error) => {
         document.getElementById("weatherResult").innerText =
@@ -76,5 +75,40 @@ function getWeatherByLocation() {
   } else {
     document.getElementById("weatherResult").innerText =
       "Geolocation is not supported by this browser.";
+  }
+}
+
+// Fetch weather data using latitude and longitude
+async function fetchWeatherDataByCoords(lat, lon) {
+  const unit = isCelsius ? "metric" : "imperial";
+  const unitSymbol = isCelsius ? "°C" : "°F";
+
+  const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=${unit}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Location not found");
+
+    const data = await response.json();
+    const temperature = data.main.temp;
+    const description = data.weather[0].description;
+    const icon = data.weather[0].icon;
+
+    currentCity = data.name;
+
+    document.getElementById("weatherResult").innerHTML = `
+      <h2>${data.name}</h2>
+      <img src="https://openweathermap.org/img/wn/${icon}@2x.png" alt="${description}" />
+      <p><strong>${temperature.toFixed(1)}${unitSymbol}</strong></p>
+      <p>${description}</p>
+    `;
+
+    const toggleBtn = document.getElementById("toggleUnit");
+    toggleBtn.textContent = isCelsius ? "Show °F" : "Show °C";
+    toggleBtn.style.display = "inline-block";
+
+  } catch (error) {
+    document.getElementById("weatherResult").innerText = "Error fetching weather by location.";
+    console.error("Error:", error);
   }
 }
